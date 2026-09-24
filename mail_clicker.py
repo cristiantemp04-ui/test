@@ -107,7 +107,40 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--login", action="store_true")
     p.add_argument("--headed", action="store_true")
     p.add_argument("--keep-open", dest="keep_open", action="store_true")
+    p.add_argument(
+        "--inspect",
+        action="store_true",
+        help="Stampa i candidati (pulsanti/righe mail) per scoprire i selettori giusti.",
+    )
     return p.parse_args()
+
+
+def dump_candidates(page) -> None:
+    """Elenca gli elementi utili per individuare refresh button e righe mail."""
+    print("\n===== PULSANTI / ICONE (possibile refresh) =====")
+    btns = page.eval_on_selector_all(
+        "button, [role=button], a[title], a[aria-label], [class*=refresh i], [class*=reload i]",
+        "els => els.slice(0,60).map(e=>({tag:e.tagName,"
+        " aria:e.getAttribute('aria-label'), title:e.getAttribute('title'),"
+        " test:e.getAttribute('data-testid'), cls:(e.className||'').toString().slice(0,60),"
+        " txt:(e.innerText||'').trim().slice(0,25)}))",
+    )
+    for b in btns:
+        print(b)
+
+    print("\n===== POSSIBILI LISTE MAIL (container con piu' figli) =====")
+    lists = page.eval_on_selector_all(
+        "[role=list],[role=listbox],ul,ol,[class*=list i],[class*=mail i],[class*=message i],[class*=inbox i]",
+        "els => els.filter(e=>e.children.length>=2).slice(0,20)"
+        ".map(e=>({tag:e.tagName, role:e.getAttribute('role'),"
+        " cls:(e.className||'').toString().slice(0,60), kids:e.children.length,"
+        " firstChild:{tag:e.children[0].tagName, role:e.children[0].getAttribute('role'),"
+        " cls:(e.children[0].className||'').toString().slice(0,60),"
+        " txt:(e.children[0].innerText||'').trim().slice(0,40)}}))",
+    )
+    for l in lists:
+        print(l)
+    print("\n[i] Incollami questo output e ti cablo i selettori esatti in mail_clicker.py")
 
 
 def main() -> int:
@@ -133,6 +166,17 @@ def main() -> int:
 
         print(f"[*] Apro {args.url}")
         page.goto(args.url, wait_until="domcontentloaded")
+
+        # --- modalita' inspect: stampa i candidati e esci ----------------------
+        if args.inspect:
+            page.wait_for_timeout(args.wait)
+            try:
+                page.wait_for_load_state("networkidle", timeout=10000)
+            except Exception:
+                pass
+            dump_candidates(page)
+            browser.close()
+            return 0
 
         # --- modalita' login: aspetta l'utente, poi salva la sessione ----------
         if args.login:
