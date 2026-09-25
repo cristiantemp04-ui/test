@@ -10,7 +10,22 @@ RESET = "\033[0m"
 URL = "https://find-and-update.company-information.service.gov.uk/"
 ADVANCED_SEARCH = (By.CSS_SELECTOR, "a[data-id='advanced-company-search']")
 REJECT_COOKIES = (By.ID, "reject-cookies-button")
+SECTIONS = ["Incorporation date", "Company status"]
 TIMEOUT = 20
+
+def show_section(driver, wait, title):
+    button = (
+        By.XPATH,
+        "//button[contains(@class, 'govuk-accordion__section-button')]"
+        f"[.//span[contains(@class, 'heading-text') and normalize-space()='{title}']]",
+    )
+    show = (By.CSS_SELECTOR, ".govuk-accordion__section-toggle-text")
+    section = wait.until(EC.presence_of_element_located(button))
+    if section.get_attribute("aria-expanded") != "true":
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", section)
+        wait.until(EC.element_to_be_clickable(section.find_element(*show))).click()
+        wait.until(lambda d: section.get_attribute("aria-expanded") == "true")
+    print(RED + "[*] Opened section: " + RESET + title)
 
 def main():
     options = webdriver.ChromeOptions()
@@ -42,6 +57,9 @@ def main():
     driver.switch_to.window(driver.window_handles[-1])
     wait.until(EC.url_contains("advanced-search"))
     print(RED + "[*] Advanced company search opened in a new tab: " + RESET + driver.current_url)
+
+    for title in SECTIONS:
+        show_section(driver, wait, title)
 
 if __name__ == "__main__":
     main()
