@@ -6,6 +6,8 @@ import sys
 RED = "\033[91m"
 RESET = "\033[0m"
 
+DEFAULT_URL = "https://mailum.com/"
+
 WINDOWS_PATHS = [
     r"%ProgramFiles%\Google\Chrome\Application\chrome.exe",
     r"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe",
@@ -42,7 +44,7 @@ def find_chrome():
             return path
     return None
 
-def launch_chrome(url=None):
+def launch_chrome(url=DEFAULT_URL):
     chrome = find_chrome()
     if not chrome:
         print(RED + "\n[!] Chrome not found." + RESET)
@@ -60,4 +62,4 @@ def launch_chrome(url=None):
     return True
 
 if __name__ == "__main__":
-    launch_chrome(sys.argv[1] if len(sys.argv) > 1 else None)
+    launch_chrome(sys.argv[1] if len(sys.argv) > 1 else DEFAULT_URL)
